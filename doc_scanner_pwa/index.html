@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doc Scanner PWA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --bg-light: #f5f7fa;
+      --bg-dark: #2c3e50;
+      --text-dark: #333;
+      --text-light: #fff;
+      --card-bg: #fff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-light: #1e1e1e;
+        --card-bg: #2c2c2c;
+        --text-dark: #fff;
+      }
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app-header {
+      width: 100%;
+      padding: 1rem;
+      background: var(--primary-color);
+      color: white;
+      text-align: center;
+      font-size: 1.5rem;
+      user-select: none;
+    }
+
+    .scanner-container {
+      background: var(--card-bg);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      width: 95%;
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    video, canvas {
+      width: 100%;
+      border-radius: 12px;
+      margin: 10px 0;
+      background: black;
+      max-height: 300px;
+      object-fit: contain;
+    }
+
+    .scan-button {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary-color);
+      color: white;
+      font-size: 30px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      transition: background 0.3s;
+      user-select: none;
+    }
+
+    .scan-button:hover {
+      background: #2980b9;
+    }
+
+    .preview-controls {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .preview-controls button {
+      flex: 1;
+      margin: 0 5px;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #eee;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s;
+      user-select: none;
+    }
+
+    .preview-controls button:hover {
+      background: #ddd;
+    }
+
+    .multi-page-list {
+      width: 100%;
+      margin-top: 20px;
+      max-height: 150px;
+      overflow-y: auto;
+      background: var(--bg-light);
+      border-radius: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+    }
+
+    .multi-page-list.dark {
+      background: var(--card-bg);
+      border-color: #444;
+    }
+
+    .multi-page-list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      background: white;
+      padding: 5px 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .multi-page-list-item.dark {
+      background: #333;
+      color: white;
+      box-shadow: none;
+    }
+
+    .multi-page-list-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .multi-page-list-item button {
+      background: transparent;
+      border: none;
+      color: #e74c3c;
+      font-size: 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .export-button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      transition: background 0.3s;
+    }
+
+    .export-button:hover {
+      background: #2980b9;
+    }
+
+    .footer {
+      margin: 20px 0;
+      font-size: 12px;
+      color: #777;
+      user-select: none;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-header">📄 Doc Scanner PWA</div>
+  <div class="scanner-container">
+    <video id="video" autoplay playsinline></video>
+    <button class="scan-button" title="Capture scan" aria-label="Capture scan">📸</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="preview-controls" style="display:none;">
+      <button id="rotate-btn" title="Rotate image">🔄 Rotate</button>
+      <button id="enhance-btn" title="Enhance image">✨ Enhance</button>
+      <button id="auto-crop-btn" title="Auto Crop">📐 Auto-Crop</button>
+    </div>
+  </div>
+
+  <div class="scanner-container" style="max-width: 500px;">
+    <h3>Multi-page Scan</h3>
+    <div class="multi-page-list" id="pages-list"></div>
+    <button class="export-button" id="export-pdf-btn">Export as PDF</button>
+  </div>
+
+  <div class="footer">Install this app on your device for offline use and faster access.</div>
+
+  <script>
+    const { jsPDF } = window.jspdf;
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scanButton = document.querySelector('.scan-button');
+    const previewControls = document.querySelector('.preview-controls');
+    const rotateBtn = document.getElementById('rotate-btn');
+    const enhanceBtn = document.getElementById('enhance-btn');
+    const autoCropBtn = document.getElementById('auto-crop-btn');
+    const pagesList = document.getElementById('pages-list');
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+
+    let pages = [];
+    let currentImage = null;
+    let rotationDegrees = 0;
+    let enhanced = false;
+
+    // Setup camera stream
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+      } catch (e) {
+        alert("Camera access denied or not available: " + e);
+      }
+    }
+
+    startCamera();
+
+    function showCanvas() {
+      canvas.style.display = 'block';
+      video.style.display = 'none';
+      previewControls.style.display = 'flex';
+      scanButton.style.display = 'none';
+    }
+
+    function showVideo() {
+      canvas.style.display = 'none';
+      video.style.display = 'block';
+      previewControls.style.display = 'none';
+      scanButton.style.display = 'block';
+    }
+
+    function drawImageOnCanvas(image) {
+      canvas.width = image.width;
+      canvas.height = image.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, 0, 0);
+    }
+
+    function captureScan() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      currentImage = new Image();
+      currentImage.src = canvas.toDataURL('image/png');
+      currentImage.onload = () => {
+        showCanvas();
+        drawImageOnCanvas(currentImage);
+        rotationDegrees = 0;
+        enhanced = false;
+      };
+    }
+
+    function rotateImage() {
+      if (!currentImage) return;
+      rotationDegrees = (rotationDegrees + 90) % 360;
+      const offscreen = document.createElement('canvas');
+      const offCtx = offscreen.getContext('2d');
+      if(rotationDegrees % 180 === 0){
+        offscreen.width = currentImage.width;
+        offscreen.height = currentImage.height;
+      } else {
+        offscreen.width = currentImage.height;
+        offscreen.height = currentImage.width;
+      }
+      offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+      offCtx.translate(offscreen.width/2, offscreen.height/2);
+      offCtx.rotate(rotationDegrees * Math.PI / 180);
+      offCtx.drawImage(currentImage, -currentImage.width/2, -currentImage.height/2);
+      currentImage.src = offscreen.toDataURL();
+      currentImage.onload = () => {
+        drawImageOnCanvas(currentImage);
+      };
+    }
+
+    function enhanceImage() {
+      if (!currentImage || enhanced) return;
+      // Simple brightness/contrast enhancement
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      for(let i = 0; i < data.length; i += 4) {
+        // Increase brightness and contrast
+        data[i] = Math.min(255, data[i] * 1.1 + 15);     // R
+        data[i+1] = Math.min(255, data[i+1] * 1.1 + 15); // G
+        data[i+2] = Math.min(255, data[i+2] * 1.1 + 15); // B
+      }
+      ctx.putImageData(imageData, 0, 0);
+      currentImage.src = canvas.toDataURL();
+      enhanced = true;
+    }
+
+    function autoCrop() {
+      alert("Auto crop feature is not implemented yet.");
+    }
+
+    function addPage() {
+      if (!currentImage) return;
+      pages.push(currentImage.src);
+      renderPagesList();
+      showVideo();
+    }
+
+    function renderPagesList() {
+      pagesList.innerHTML = "";
+      pages.forEach((src, idx) => {
+        const div = document.createElement('div');
+        div.className = 'multi-page-list-item';
+        const img = document.createElement('img');
+        img.src = src;
+        const btn = document.createElement('button');
+        btn.textContent = '✖';
+        btn.title = 'Remove page';
+        btn.onclick = () => {
+          pages.splice(idx, 1);
+          renderPagesList();
+        };
+        div.appendChild(img);
+        div.appendChild(btn);
+        pagesList.appendChild(div);
+      });
+    }
+
+    function exportPDF() {
+      if(pages.length === 0) {
+        alert("Add some pages first!");
+        return;
+      }
+      const pdf = new jsPDF();
+      pages.forEach((src, idx) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+          const imgProps = pdf.getImageProperties(img);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+          if(idx > 0) pdf.addPage();
+          pdf.addImage(img, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          if(idx === pages.length - 1) pdf.save('document.pdf');
+        };
+      });
+    }
+
+    scanButton.addEventListener('click', captureScan);
+    rotateBtn.addEventListener('click', rotateImage);
+    enhanceBtn.addEventListener('click', enhanceImage);
+    autoCropBtn.addEventListener('click', autoCrop);
+    exportPdfBtn.addEventListener('click', exportPDF);
+
+    // Add captured image to pages list after preview closes
+    canvas.addEventListener('click', () => {
+      if(currentImage) {
+        addPage();
+      }
+    });
+
+  </script>
+  <script>
+    // Register service worker for PWA offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').then(registration => {
+          console.log('Service Worker registered with scope:', registration.scope);
+        }).catch(err => {
+          console.error('Service Worker registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
