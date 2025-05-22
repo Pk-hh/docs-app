@@ -1,36 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Doc Scanner PWA</title>
-
-  <!-- PWA Manifest -->
+  <title>Doc Scanner</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
   <meta name="theme-color" content="#4A90E2" />
-
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-
-  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet" />
-
   <style>
     :root {
       --primary: #4A90E2;
-      --background: #F0F4F8;
+      --background: linear-gradient(135deg, #F0F4F8 0%, #D9E2EC 100%);
       --surface: #FFFFFF;
       --text-primary: #1F2937;
-      --text-secondary: #4B5563;
       --shadow: rgba(0, 0, 0, 0.1);
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: #1F2937;
+        --background: linear-gradient(135deg, #1F2937 0%, #2D3748 100%);
         --surface: #2D3748;
         --text-primary: #E2E8F0;
-        --text-secondary: #A0AEC0;
         --shadow: rgba(0, 0, 0, 0.5);
       }
     }
@@ -42,7 +33,6 @@
       display: flex;
       flex-direction: column;
       min-height: 100vh;
-      padding-bottom: env(safe-area-inset-bottom);
     }
     header {
       background: var(--surface);
@@ -62,76 +52,70 @@
     .camera-card {
       background: var(--surface);
       border-radius: 1rem;
-      box-shadow: 0 4px 8px var(--shadow), 0 0 8px var(--shadow);
+      box-shadow: 0 4px 12px var(--shadow);
       overflow: hidden;
       position: relative;
-      animation: fadeInUp 0.5s;
+      animation: fadeInUp 0.6s ease;
     }
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
     video, canvas {
-      width: 100%;
-      height: auto;
+      width: 100%; height: auto;
       display: block;
     }
     .floating-btn {
       position: absolute;
-      bottom: 1rem;
-      right: 1rem;
+      bottom: 1rem; right: 1rem;
       background: var(--primary);
       color: white;
       border: none;
       border-radius: 50%;
-      width: 56px;
-      height: 56px;
+      width: 56px; height: 56px;
       font-size: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px var(--shadow), 0 0 20px var(--primary);
+      animation: pulse 2s infinite;
+      box-shadow: 0 4px 16px var(--primary);
       cursor: pointer;
-      transition: background 0.3s, box-shadow 0.3s, transform 0.2s;
+      transition: transform 0.2s;
     }
-    .floating-btn:hover {
-      background: #357ABD;
-      box-shadow: 0 4px 20px var(--shadow), 0 0 30px var(--primary);
-      transform: scale(1.1);
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(74,144,226,0.7); }
+      50% { box-shadow: 0 0 0 10px rgba(74,144,226,0); }
     }
+    .floating-btn:active { transform: scale(1.1); }
     .controls {
-      display: flex;
-      justify-content: space-around;
+      display: flex; justify-content: space-around;
       background: var(--surface);
       border-radius: 1rem;
       padding: 0.75rem;
-      box-shadow: 0 4px 8px var(--shadow);
-      gap: 0.5rem;
+      box-shadow: 0 4px 12px var(--shadow);
     }
     .controls button {
-      background: none;
-      border: none;
+      background: none; border: none;
       color: var(--primary);
       font-size: 1.25rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 0.25rem;
-      cursor: pointer;
-      transition: color 0.3s, text-shadow 0.3s, transform 0.2s;
+      position: relative;
+      overflow: hidden;
     }
-    .controls button i {
-      font-size: 1.5rem;
-      transition: transform 0.2s;
+    .controls button::after {
+      content: '';
+      position: absolute;
+      width: 100%; height: 100%;
+      background: rgba(74,144,226,0.2);
+      top: 0; left: -100%;
+      transform: skewX(-20deg);
+      transition: left 0.5s;
     }
-    .controls button:hover {
-      color: #357ABD;
-      text-shadow: 0 0 8px #357ABD;
-      transform: translateY(-4px);
-    }
-    .controls button:hover i {
-      transform: scale(1.2);
-    }
+    .controls button:hover::after { left: 100%; }
+    .controls button i { font-size: 1.5rem; }
     .pages-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -140,20 +124,26 @@
     .page-thumb {
       background: var(--surface);
       border-radius: 0.75rem;
-      box-shadow: 0 2px 6px var(--shadow), 0 0 8px var(--primary);
+      box-shadow: 0 2px 6px var(--shadow);
       overflow: hidden;
       cursor: pointer;
       transition: transform 0.3s, box-shadow 0.3s;
-      animation: fadeIn 0.5s;
+      position: relative;
+    }
+    .page-thumb::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(45deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 80%);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
     .page-thumb:hover {
       transform: scale(1.05);
-      box-shadow: 0 4px 12px var(--shadow), 0 0 12px var(--primary);
+      box-shadow: 0 4px 12px var(--shadow);
     }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
+    .page-thumb:hover::before { opacity: 1; }
     footer {
       text-align: center;
       padding: 0.5rem;
@@ -176,12 +166,12 @@
     <div class="controls">
       <button onclick="rotate()"><i class="fa-solid fa-rotate-right"></i><span>Rotate</span></button>
       <button onclick="enhance()"><i class="fa-solid fa-sparkles"></i><span>Enhance</span></button>
-      <button onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i><span>PDF</span></button>
+      <button onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i><span>Export</span></button>
     </div>
 
     <div class="pages-grid" id="pagesList"></div>
   </main>
-  <footer>PWA Installable &amp; Mobile-First UI</footer>
+  <footer>Developed by Quantam Studios</footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
@@ -198,8 +188,8 @@
     function capture() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0,0);
-      const dataUrl = canvas.toDataURL('image/jpeg',1);
+      ctx.drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 1);
       pages.push(dataUrl);
       renderPages();
     }
@@ -222,12 +212,11 @@
       const img = new Image(); img.src = src;
       img.onload = () => {
         canvas.width = img.height; canvas.height = img.width;
-        ctx.save();
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.rotate(90*Math.PI/180);
+        ctx.save(); ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.rotate(90 * Math.PI/180);
         ctx.drawImage(img, -img.width/2, -img.height/2);
         ctx.restore();
-        pages.push(canvas.toDataURL('image/jpeg',1));
+        pages.push(canvas.toDataURL('image/jpeg', 1));
         renderPages();
       }
     }
@@ -239,9 +228,9 @@
       img.onload = () => {
         canvas.width = img.width; canvas.height = img.height;
         ctx.filter = 'contrast(1.3) brightness(1.1)';
-        ctx.drawImage(img, 0,0);
+        ctx.drawImage(img, 0, 0);
         ctx.filter = 'none';
-        pages.push(canvas.toDataURL('image/jpeg',1));
+        pages.push(canvas.toDataURL('image/jpeg', 1));
         renderPages();
       }
     }
@@ -250,24 +239,22 @@
       if (!pages.length) return alert('No pages to export');
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
-      pages.forEach((src,i) => {
+      pages.forEach((src, i) => {
         const img = new Image(); img.src = src;
         img.onload = () => {
           const pw = pdf.internal.pageSize.getWidth();
           const ph = pdf.internal.pageSize.getHeight();
-          const ratio = Math.min(pw/img.width, ph/img.height);
-          const w = img.width*ratio;
-          const h = img.height*ratio;
-          if(i>0) pdf.addPage();
-          pdf.addImage(img,'JPEG',(pw-w)/2,(ph-h)/2,w,h);
-          if (i===pages.length-1) pdf.save('scanned.pdf');
+          const ratio = Math.min(pw / img.width, ph / img.height);
+          const w = img.width * ratio;
+          const h = img.height * ratio;
+          if (i > 0) pdf.addPage();
+          pdf.addImage(img, 'JPEG', (pw - w) / 2, (ph - h) / 2, w, h);
+          if (i === pages.length - 1) pdf.save('scanned.pdf');
         }
       });
     }
 
-    if('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   </script>
 </body>
 </html>
