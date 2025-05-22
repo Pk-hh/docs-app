@@ -2,144 +2,259 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Doc Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doc Scanner PWA</title>
+
+  <!-- PWA Manifest & Theme -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
-  <meta name="theme-color" content="#3498db" />
+  <meta name="theme-color" content="#4A90E2" />
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet" />
+
   <style>
     :root {
-      --primary: #3498db;
-      --background: #f5f7fa;
-      --text: #333;
-      --button: #2980b9;
+      --primary: #4A90E2;
+      --background: #F0F4F8;
+      --surface: #FFFFFF;
+      --text-primary: #1F2937;
+      --text-secondary: #4B5563;
+      --shadow: rgba(0, 0, 0, 0.1);
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
-        --background: #1c1c1c;
-        --text: #fff;
+        --background: #1F2937;
+        --surface: #2D3748;
+        --text-primary: #E2E8F0;
+        --text-secondary: #A0AEC0;
+        --shadow: rgba(0, 0, 0, 0.5);
       }
     }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: var(--background);
-      color: var(--text);
+      font-family: 'Poppins', sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      background: var(--surface);
+      box-shadow: 0 2px 4px var(--shadow);
+      padding: 1rem;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    main {
+      flex: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .camera-card {
+      background: var(--surface);
+      border-radius: 1rem;
+      box-shadow: 0 4px 8px var(--shadow), 0 0 8px var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    video, canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .floating-btn {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px var(--shadow), 0 0 20px var(--primary);
+      cursor: pointer;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .floating-btn:hover {
+      background: #357ABD;
+      box-shadow: 0 4px 20px var(--shadow), 0 0 30px var(--primary);
+    }
+    .controls {
+      display: flex;
+      justify-content: space-around;
+      background: var(--surface);
+      border-radius: 1rem;
+      padding: 0.5rem;
+      box-shadow: 0 4px 8px var(--shadow);
+      gap: 0.5rem;
+    }
+    .controls button {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 1.25rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
+      gap: 0.25rem;
+      cursor: pointer;
+      transition: color 0.3s, text-shadow 0.3s;
     }
-
-    header {
-      width: 100%;
-      padding: 1rem;
-      background-color: var(--primary);
-      color: white;
-      text-align: center;
+    .controls button i {
       font-size: 1.5rem;
     }
-
-    main {
-      flex: 1;
-      width: 100%;
-      max-width: 500px;
-      padding: 1rem;
-      box-sizing: border-box;
-    }
-
-    video, canvas {
-      width: 100%;
-      border-radius: 12px;
-      margin: 1rem 0;
-      background: #000;
-    }
-
-    .controls {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .controls button {
-      flex: 1;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 10px;
-      background-color: var(--button);
-      color: white;
-      cursor: pointer;
-    }
-
     .controls button:hover {
-      background-color: #1e6aa6;
+      color: #357ABD;
+      text-shadow: 0 0 8px #357ABD;
     }
-
+    .pages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 0.75rem;
+    }
+    .page-thumb {
+      background: var(--surface);
+      border-radius: 0.75rem;
+      box-shadow: 0 2px 6px var(--shadow), 0 0 8px var(--primary);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .page-thumb img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .page-thumb:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px var(--shadow), 0 0 12px var(--primary);
+    }
     footer {
-      padding: 1rem;
-      font-size: 0.8rem;
-      color: gray;
       text-align: center;
+      padding: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
     }
   </style>
 </head>
 <body>
   <header>📄 Doc Scanner</header>
   <main>
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <div class="camera-card">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+      <button class="floating-btn" onclick="capture()" title="Scan">
+        <i class="fa-solid fa-camera"></i>
+      </button>
+    </div>
 
     <div class="controls">
-      <button onclick="capture()">📸 Scan</button>
-      <button onclick="downloadPDF()">📁 Export PDF</button>
+      <button onclick="rotate()"><i class="fa-solid fa-rotate-right"></i><span>Rotate</span></button>
+      <button onclick="enhance()"><i class="fa-solid fa-sparkles"></i><span>Enhance</span></button>
+      <button onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i><span>PDF</span></button>
     </div>
+
+    <div class="pages-grid" id="pagesList"></div>
   </main>
-  <footer>
-    Powered by Web Camera + JS | PWA Ready
-  </footer>
+  <footer>Developed by Quanmtam Studios </footer>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const pagesList = document.getElementById('pagesList');
     let pages = [];
 
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
-    });
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => video.srcObject = stream)
+      .catch(err => alert('Camera error: ' + err));
 
     function capture() {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-      pages.push(canvas.toDataURL("image/jpeg", 1.0));
-      alert("Page added! Export when done.");
+      ctx.drawImage(video, 0,0);
+      const dataUrl = canvas.toDataURL('image/jpeg',1);
+      pages.push(dataUrl);
+      renderPages();
     }
 
-    async function downloadPDF() {
+    function renderPages() {
+      pagesList.innerHTML = '';
+      pages.forEach(src => {
+        const div = document.createElement('div');
+        div.className = 'page-thumb';
+        const img = document.createElement('img');
+        img.src = src;
+        div.appendChild(img);
+        pagesList.appendChild(div);
+      });
+    }
+
+    function rotate() {
+      if (!pages.length) return;
+      const src = pages.pop();
+      const img = new Image(); img.src = src;
+      img.onload = () => {
+        canvas.width = img.height; canvas.height = img.width;
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.rotate(90*Math.PI/180);
+        ctx.drawImage(img, -img.width/2, -img.height/2);
+        ctx.restore();
+        pages.push(canvas.toDataURL('image/jpeg',1));
+        renderPages();
+      }
+    }
+
+    function enhance() {
+      if (!pages.length) return;
+      const src = pages.pop();
+      const img = new Image(); img.src = src;
+      img.onload = () => {
+        canvas.width = img.width; canvas.height = img.height;
+        ctx.filter = 'contrast(1.3) brightness(1.1)';
+        ctx.drawImage(img, 0,0);
+        ctx.filter = 'none';
+        pages.push(canvas.toDataURL('image/jpeg',1));
+        renderPages();
+      }
+    }
+
+    function exportPDF() {
+      if (!pages.length) return alert('No pages to export');
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
-
-      for (let i = 0; i < pages.length; i++) {
-        if (i > 0) pdf.addPage();
-        const imgProps = pdf.getImageProperties(pages[i]);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(pages[i], 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      }
-
-      pdf.save("scanned_document.pdf");
+      pages.forEach((src,i) => {
+        const img = new Image(); img.src = src;
+        img.onload = () => {
+          const pw = pdf.internal.pageSize.getWidth();
+          const ph = pdf.internal.pageSize.getHeight();
+          const ratio = Math.min(pw/img.width, ph/img.height);
+          const w = img.width*ratio;
+          const h = img.height*ratio;
+          if(i>0) pdf.addPage();
+          pdf.addImage(img,'JPEG',(pw-w)/2,(ph-h)/2,w,h);
+          if (i===pages.length-1) pdf.save('scanned.pdf');
+        }
+      });
     }
 
-    // PWA: Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
+    if('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
     }
   </script>
 </body>
